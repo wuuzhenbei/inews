@@ -260,13 +260,7 @@ createApp({
         const loadStats = async () => { try { stats.value = await (await fetch(`${API}/api/statistics`)).json(); } catch(e) {} };
         const doSearch = () => loadNews();
         const filteredNews = computed(() => {
-            let list = newsList.value;
-            // 排除已在AI精选中显示的项目
-            if(topNewsIds.value.size > 0) {
-                list = list.filter(n => !topNewsIds.value.has(n.id));
-            }
-            // 后端已过滤source_type和blockedKeywords，前端仅处理客户端新增的屏蔽词
-            return list;
+            return newsList.value;
         });
 
         const openSummary = async (news) => {
