@@ -60,10 +60,17 @@ bash start.sh
 - **财经**: Bloomberg、CNBC、CoinDesk
 - **学术/外交**: Nature、Science、NATO、UN
 
-### X/Twitter 关键人物
-- 科技: 马斯克、扎克伯格、Sam Altman、黄仁勋、Satya Nadella
-- 政治: 特朗普、莫迪
-- AI: OpenAI、Google DeepMind、Anthropic
+### X/Twitter 关键人物 (100+)
+
+**科技大佬**: 马斯克、Sam Altman、扎克伯格、贝佐斯、比尔盖茨、蒂姆库克、黄仁勋、Satya Nadella、雷军、李彦宏、张一鸣、马云、Marc Andreessen、SpaceX、Tesla、Apple
+
+**政治人物**: 特朗普、拜登、莫迪、泽连斯基、马克龙、朔尔茨、苏纳克、岸田文雄、尹锡悦、以色列总理、伊朗最高领袖、土耳其/沙特/巴西/墨西哥/南非/印尼总统、白宫、美国国务卿/国防部长、中国/俄罗斯/乌克兰外交部、以色列军方、美国两党
+
+**AI 领域**: OpenAI、Google DeepMind、Anthropic、Ilya Sutskever、Demis Hassabis、Andrej Karpathy、Jim Fan、Fei-Fei Li、Yann LeCun、Andrew Ng、Dario Amodei、DeepSeek、智谱AI、月之暗面、MiniMax、百川、商汤、讯飞、xAI、Mistral AI、Groq、Stanford HAI、MIT CSAIL
+
+**权威媒体**: BBC、CNN、Reuters、AP、NYT、Washington Post、Bloomberg、WSJ、FT、The Economist、CNBC、Al Jazeera、Breaking News
+
+**财经/宏观**: Jim Cramer、Cathie Wood、Ray Dalio、Michael Saylor、Vitalik Buterin、Zerohedge、美联储、纽约联储、欧央行、英格兰银行、SEC、CFTC
 
 ### 热搜热榜
 - 微博热搜、知乎热榜、头条热榜、B站热搜
