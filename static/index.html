@@ -491,8 +491,8 @@
                     <div>
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-xs text-gray-400">重要新闻大横幅</span>
-                            <button @click="showBreakingBanner=!showBreakingBanner" :class="showBreakingBanner?'bg-blue-600':'bg-dark-4'" class="w-10 h-5 rounded-full relative overflow-hidden transition">
-                                <span :class="showBreakingBanner?'translate-x-5':'translate-x-0.5'" class="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"></span>
+                            <button @click="showBreakingBanner=!showBreakingBanner" :class="showBreakingBanner?'bg-blue-600':'bg-dark-4'" class="w-10 h-5 rounded-full relative overflow-hidden transition p-0.5">
+                                <span :class="showBreakingBanner?'translate-x-5':'translate-x-0'" class="relative z-10 block w-4 h-4 rounded-full bg-white shadow transition-transform"></span>
                             </button>
                         </div>
                         <div v-if="showBreakingBanner" class="ml-1 space-y-2">
@@ -520,8 +520,8 @@
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-xs text-gray-400">新新闻通知弹窗</span>
-                        <button @click="showNewNotif=!showNewNotif" :class="showNewNotif?'bg-blue-600':'bg-dark-4'" class="w-10 h-5 rounded-full relative overflow-hidden transition">
-                            <span :class="showNewNotif?'translate-x-5':'translate-x-0.5'" class="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"></span>
+                        <button @click="showNewNotif=!showNewNotif" :class="showNewNotif?'bg-blue-600':'bg-dark-4'" class="w-10 h-5 rounded-full relative overflow-hidden transition p-0.5">
+                            <span :class="showNewNotif?'translate-x-5':'translate-x-0'" class="relative z-10 block w-4 h-4 rounded-full bg-white shadow transition-transform"></span>
                         </button>
                     </div>
                     <div class="bg-dark-3 rounded-lg p-2.5 text-xs text-gray-500">
