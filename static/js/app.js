@@ -31,6 +31,36 @@ createApp({
         const filterDirection = ref('all');
         const filterAuthor = ref('all');
         const authorOptions = ref([]);
+        const showAuthorPicker = ref(false);
+        const authorListRef = ref(null);
+
+        // 按首字母分组的作者列表
+        const groupedAuthors = computed(() => {
+            const groups = {};
+            const sorted = [...authorOptions.value].sort((a, b) => {
+                const la = (a[0] || '').toUpperCase();
+                const lb = (b[0] || '').toUpperCase();
+                // 中文按拼音首字母分组简化：非ASCII统一归到#类
+                const isAsciiA = la.charCodeAt(0) >= 65 && la.charCodeAt(0) <= 90;
+                const isAsciiB = lb.charCodeAt(0) >= 65 && lb.charCodeAt(0) <= 90;
+                if (isAsciiA && isAsciiB) return la.localeCompare(lb);
+                if (isAsciiA) return -1;
+                if (isAsciiB) return 1;
+                return a.localeCompare(b, 'zh');
+            });
+            sorted.forEach(name => {
+                const ch = (name[0] || '').toUpperCase();
+                const letter = (ch.charCodeAt(0) >= 65 && ch.charCodeAt(0) <= 90) ? ch : '#';
+                if (!groups[letter]) groups[letter] = [];
+                groups[letter].push(name);
+            });
+            return groups;
+        });
+        const authorLetters = computed(() => Object.keys(groupedAuthors.value));
+        const scrollToLetter = (letter) => {
+            const el = document.getElementById('letter-' + letter);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
 
         // AI总结方向
         const summaryFocus = ref('');
@@ -448,10 +478,20 @@ createApp({
                 if(Array.isArray(data)) {
                     authorOptions.value = data;
                 } else {
-                    // 多source_type返回对象，展平
                     authorOptions.value = Object.values(data).flat();
                 }
             } catch(e) { authorOptions.value = []; }
+        };
+
+        // 刷新特定人物的最新内容
+        const refreshAuthor = async (author) => {
+            showToast(`正在刷新 ${author}...`);
+            try {
+                const r = await fetch(`${API}/api/collect/trigger`, {method:'POST'});
+                if(r.ok) {
+                    setTimeout(() => { loadNews(true); showToast(`${author} 刷新完成`); }, 3000);
+                }
+            } catch(e) { showToast('刷新失败', 'err'); }
         };
         // 切换来源时重新加载作者列表并重置作者筛选
         const onSourceChange = (val) => {
@@ -496,6 +536,12 @@ createApp({
         onMounted(() => {
             loadTopNews(); loadNews(); loadStats(); loadConfig(); loadAuthors('all');
             pollTimer = setInterval(() => { loadNews(true); loadTopNews(); }, refreshInterval.value * 1000);
+            // 点击外部关闭作者选择面板
+            document.addEventListener('click', (e) => {
+                if(showAuthorPicker.value && !e.target.closest('.relative')) {
+                    showAuthorPicker.value = false;
+                }
+            });
             collectTimer = setInterval(() => fetch(`${API}/api/collect/trigger`,{method:'POST'}), collectInterval.value * 1000);
             // 初始化卡片光晕 + 每次加载后重新绑定
             nextTick(initCardGlow);
@@ -513,11 +559,12 @@ createApp({
             showRAGChat,ragMessages,ragInput,ragLoading,ragChatBox,
             batchLoading,batchProgress,
             analysisTab,analysisData,analysisLoading,showMarketBrief,marketBriefText,marketBriefLoading,
-            sourceOptions,dateOptions,directionOptions,focusOptions,breakingTypeOptions,authorOptions,
+            sourceOptions,dateOptions,directionOptions,focusOptions,breakingTypeOptions,
+            authorOptions,showAuthorPicker,authorListRef,groupedAuthors,authorLetters,scrollToLetter,
             filteredNews,getScoreLevel,getScoreColor,getScoreRing,truncate,
             getSourceTagClass,timeAgo,formatPubTime,formatLocalTime,formatSummary,
             openSummary,regenerateSummary,loadAnalysis,openMarketBrief,toggleBookmark,sendChat,sendRAGChat,batchSummary,markRead,openNews,scrollToNews,
-            loadNews,doSearch,manualRefresh,triggerCollect,triggerScore,onSourceChange,
+            loadNews,doSearch,manualRefresh,triggerCollect,triggerScore,onSourceChange,refreshAuthor,
             addKeyword,saveSettings,showToast
         };
     }

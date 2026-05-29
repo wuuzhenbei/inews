@@ -135,18 +135,68 @@
                 </button>
             </div>
         </div>
-        <!-- 二级筛选：方向 + 人物 -->
-        <div class="flex flex-wrap items-center gap-2 mb-3">
-            <div class="flex bg-dark-3 rounded-lg p-0.5">
+        <!-- 二级筛选：方向 + 人物（关联容器） -->
+        <div class="flex items-center gap-0 mb-3 flex-wrap" style="font-size:11px">
+            <!-- 方向筛选 -->
+            <div class="flex items-center bg-dark-3/80 rounded-l-lg border border-white/5 border-r-0 px-2 py-1 gap-1">
+                <span class="text-gray-500 text-xs">方向</span>
                 <button v-for="d in directionOptions" :key="d.value" @click="filterDirection=d.value;loadNews()"
-                        :class="filterDirection===d.value?'bg-dark-1 text-white':'text-gray-500'"
-                        class="px-2 py-1 rounded-md text-xs transition">{{ d.label }}</button>
+                        :class="filterDirection===d.value?'bg-blue-600 text-white':'text-gray-500 hover:text-gray-300'"
+                        class="px-1.5 py-0.5 rounded transition">{{ d.label }}</button>
             </div>
-            <select v-if="authorOptions.length > 0" v-model="filterAuthor" @change="loadNews()"
-                    class="bg-dark-3 border border-white/5 rounded-lg px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-blue-500/50">
-                <option value="all">全部人物</option>
-                <option v-for="a in authorOptions" :key="a" :value="a">{{ a }}</option>
-            </select>
+            <!-- 连接符 -->
+            <div class="bg-dark-3/80 border-y border-white/5 px-1 py-1 flex items-center">
+                <span class="text-gray-600">+</span>
+            </div>
+            <!-- 人物筛选（自定义下拉） -->
+            <div class="relative bg-dark-3/80 rounded-r-lg border border-white/5 border-l-0 px-2 py-1 flex items-center gap-1">
+                <span class="text-gray-500 text-xs">人物</span>
+                <button @click="showAuthorPicker=!showAuthorPicker"
+                        class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-dark-4/80 hover:bg-dark-1 transition text-gray-300"
+                        style="min-width:100px;max-width:160px">
+                    <span class="truncate flex-1 text-left">{{ filterAuthor==='all'?'全部':filterAuthor }}</span>
+                    <span class="text-gray-600 text-xs">▾</span>
+                </button>
+                <!-- 人物选择面板 -->
+                <div v-if="showAuthorPicker" class="absolute top-full left-0 mt-1 z-50 bg-dark-2/95 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl" style="width:280px;max-height:360px">
+                    <!-- 首字母快速定位 -->
+                    <div class="flex flex-wrap gap-0.5 px-2 pt-2 pb-1 border-b border-white/5">
+                        <button @click="filterAuthor='all';showAuthorPicker=false;loadNews()"
+                                :class="filterAuthor==='all'?'bg-blue-600 text-white':'text-gray-500 hover:text-white'"
+                                class="w-5 h-5 rounded text-center transition" style="font-size:10px">全</button>
+                        <button v-for="letter in authorLetters" :key="letter"
+                                @click="scrollToLetter(letter)"
+                                class="w-5 h-5 rounded text-center text-gray-500 hover:text-white hover:bg-dark-4 transition"
+                                style="font-size:10px">{{ letter }}</button>
+                    </div>
+                    <!-- 作者列表 -->
+                    <div class="overflow-y-auto px-1 py-1" style="max-height:300px" ref="authorListRef">
+                        <template v-for="(authors, letter) in groupedAuthors" :key="letter">
+                            <div :id="'letter-'+letter" class="text-xs text-blue-400/60 px-2 pt-2 pb-0.5 font-medium sticky top-0 bg-dark-2/90">{{ letter }}</div>
+                            <button v-for="a in authors" :key="a"
+                                    @click="filterAuthor=a;showAuthorPicker=false;loadNews()"
+                                    :class="filterAuthor===a?'bg-blue-600/20 text-blue-400':'text-gray-400 hover:text-white hover:bg-dark-4/50'"
+                                    class="w-full text-left px-2 py-1 rounded transition truncate">{{ a }}</button>
+                        </template>
+                        <div v-if="authorOptions.length===0" class="text-center text-gray-600 py-4 text-xs">暂无人物数据</div>
+                    </div>
+                </div>
+            </div>
+            <!-- 筛选状态 + 操作 -->
+            <div class="flex items-center gap-1 ml-2">
+                <span v-if="filterDirection!=='all'||filterAuthor!=='all'"
+                      class="bg-blue-600/10 text-blue-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span v-if="filterDirection!=='all'">{{ filterDirection }}</span>
+                    <span v-if="filterDirection!=='all'&&filterAuthor!=='all'" class="text-blue-400/50">×</span>
+                    <span v-if="filterAuthor!=='all'">{{ filterAuthor }}</span>
+                    <button @click="filterDirection='all';filterAuthor='all';loadNews()" class="ml-0.5 text-blue-400/60 hover:text-red-400">✕</button>
+                </span>
+                <button v-if="filterAuthor!=='all'" @click="refreshAuthor(filterAuthor)"
+                        class="px-1.5 py-0.5 rounded bg-dark-3 border border-white/5 text-gray-500 hover:text-green-400 hover:border-green-500/30 transition"
+                        title="刷新该人物的最新内容">
+                    ↻ 刷新
+                </button>
+            </div>
         </div>
     </div>
 
