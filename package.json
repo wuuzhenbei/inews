@@ -1,0 +1,16 @@
+{
+  "name": "findnews",
+  "version": "1.0.0",
+  "description": "- 多源新闻采集（RSS / X/Twitter / 热搜榜 / RSSHub） - AI 智能评分与分类（支持小米MiMo推理模型） - AI 新闻摘要生成（按类别定制提示词） - RAG 聊天问答（基于新闻库的智能对话） - 实时更新通知与重大新闻提醒 - 暗色主题 UI（Vue 3 + Tailwind CSS）",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
