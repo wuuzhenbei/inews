@@ -24,7 +24,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(name)s] %(levelna
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__, static_folder='static')
-CORS(app, origins=['http://localhost:5000', 'http://127.0.0.1:5000', 'http://0.0.0.0:5000', 'http://10.3.182.211:5000'], supports_credentials=True)
+allowed_origins = os.getenv('CORS_ORIGINS', 'http://localhost:5000,http://127.0.0.1:5000').split(',')
+CORS(app, origins=allowed_origins, supports_credentials=True)
 
 # API鉴权中间件
 @app.before_request
@@ -646,12 +647,12 @@ def api_health():
         'recent_sources': source_activity,
     })
 
-# ── 启动 ──
+# ── 初始化（gunicorn和直接运行都会执行）──
+init_db()
+logger.info("数据库初始化完成")
+threading.Thread(target=_first_collect, daemon=True, name='first-collect').start()
+start_scheduler()
+
 if __name__ == '__main__':
-    init_db()
-    logger.info("数据库初始化完成")
-    # 异步执行首次采集，不阻塞Web服务启动
-    threading.Thread(target=_first_collect, daemon=True, name='first-collect').start()
-    start_scheduler()
     logger.info(f"Web服务启动: http://localhost:{WEB_PORT}")
     app.run(host=WEB_HOST, port=WEB_PORT, debug=False, threaded=True)

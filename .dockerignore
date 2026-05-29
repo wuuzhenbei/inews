@@ -1,0 +1,14 @@
+.env
+.env.local
+data/
+logs/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.idea/
+.vscode/
+*.md
+page_check.html
+start.bat
+start.sh
