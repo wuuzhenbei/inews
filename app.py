@@ -36,7 +36,8 @@ def check_api_key():
 
 # 允许的配置key
 ALLOWED_CONFIG_KEYS = {'interest_weights', 'blocked_keywords', 'ai_model',
-                       'refresh_interval', 'collect_interval', 'breaking_threshold'}
+                       'refresh_interval', 'collect_interval', 'breaking_threshold',
+                       'breaking_types'}
 
 executor = ThreadPoolExecutor(max_workers=8)
 
@@ -91,18 +92,19 @@ def _build_summary_prompt(title, content, source_type, direction):
 
 请用中文回答，简洁专业。"""
 
-def _generate_single_summary(news):
-    """为单条新闻生成AI总结（线程安全）"""
+def _generate_single_summary(news, override_prompt=None, force=False):
+    """为单条新闻生成AI总结（线程安全）。override_prompt可覆盖默认prompt，force=True跳过缓存。"""
     news_id = news['id']
-    cached = get_ai_summary(news_id)
-    if cached:
-        return {'id': news_id, 'summary': cached, 'cached': True}
+    if not force:
+        cached = get_ai_summary(news_id)
+        if cached:
+            return {'id': news_id, 'summary': cached, 'cached': True}
 
     title = news.get('title', '')
     content = news.get('content', '')
     source_type = news.get('source_type', 'media')
     direction = news.get('direction', '')
-    prompt = _build_summary_prompt(title, content, source_type, direction)
+    prompt = override_prompt or _build_summary_prompt(title, content, source_type, direction)
 
     try:
         client = get_ai_client()
@@ -133,6 +135,8 @@ def api_news():
     sort = request.args.get('sort', 'score')
     source = request.args.get('source', 'all')
     keyword = request.args.get('keyword', None)
+    direction = request.args.get('direction', None)
+    author = request.args.get('author', None)
     days = request.args.get('days', None)
     if days is not None:
         try:
@@ -144,7 +148,8 @@ def api_news():
         offset = max(int(request.args.get('offset', 0)), 0)
     except (ValueError, TypeError):
         return jsonify({'error': 'invalid limit/offset'}), 400
-    news = get_news_list(sort=sort, source_type=source, keyword=keyword, days=days, limit=limit, offset=offset)
+    news = get_news_list(sort=sort, source_type=source, keyword=keyword, days=days,
+                         limit=limit, offset=offset, direction=direction, author=author)
     return jsonify(news)
 
 @app.route('/api/news/<int:news_id>/read', methods=['POST'])
@@ -172,6 +177,31 @@ def api_search():
     results = search_news(keyword)
     return jsonify(results)
 
+@app.route('/api/authors')
+def api_authors():
+    """获取去重的作者/来源列表，可按source_type筛选"""
+    source_type = request.args.get('source', None)
+    with get_conn() as conn:
+        if source_type and source_type != 'all':
+            rows = conn.execute(
+                "SELECT DISTINCT author FROM news WHERE author IS NOT NULL AND author != '' AND source_type = ? ORDER BY author",
+                (source_type,)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT DISTINCT author, source_type FROM news WHERE author IS NOT NULL AND author != '' ORDER BY source_type, author"
+            ).fetchall()
+    if source_type and source_type != 'all':
+        return jsonify([r['author'] for r in rows])
+    else:
+        result = {}
+        for r in rows:
+            st = r['source_type'] or 'other'
+            if st not in result:
+                result[st] = []
+            result[st].append(r['author'])
+        return jsonify(result)
+
 @app.route('/api/statistics')
 def api_statistics():
     return jsonify(get_statistics())
@@ -179,9 +209,14 @@ def api_statistics():
 # ── AI总结API（带缓存）──
 @app.route('/api/news/<int:news_id>/summary')
 def api_news_summary(news_id):
-    cached = get_ai_summary(news_id)
-    if cached:
-        return jsonify({'summary': cached, 'type': 'cached', 'cached': True})
+    focus = request.args.get('focus', '')
+    regenerate = request.args.get('regenerate', '') == '1'
+
+    # 非重新生成时检查缓存
+    if not regenerate:
+        cached = get_ai_summary(news_id)
+        if cached:
+            return jsonify({'summary': cached, 'type': 'cached', 'cached': True})
 
     with get_conn() as conn:
         row = conn.execute("SELECT * FROM news WHERE id = ?", (news_id,)).fetchone()
@@ -189,7 +224,14 @@ def api_news_summary(news_id):
         return jsonify({'error': 'not found'}), 404
 
     news = dict(row)
-    result = _generate_single_summary(news)
+    # 如果指定了focus，覆盖默认的source_type判断
+    if focus:
+        title = news.get('title', '')
+        content = news.get('content', '')
+        prompt = _build_summary_prompt(title, content, focus, focus)
+    else:
+        prompt = None
+    result = _generate_single_summary(news, override_prompt=prompt, force=True)
     if 'error' in result:
         return jsonify({'error': result['error']}), 500
     return jsonify({'summary': result['summary'], 'type': news.get('source_type',''), 'cached': False})

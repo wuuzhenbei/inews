@@ -23,8 +23,17 @@ createApp({
         const collectInterval = ref(180);
         const showBreakingBanner = ref(true);
         const breakingThreshold = ref(85);
+        const breakingTypes = ref(['all']);
         const showNewNotif = ref(true);
         const breakingNews = ref(null);
+
+        // 精细筛选
+        const filterDirection = ref('all');
+        const filterAuthor = ref('all');
+        const authorOptions = ref([]);
+
+        // AI总结方向
+        const summaryFocus = ref('');
         const updateToast = ref(null);
         const showUpdatePanel = ref(false);
         const updateList = ref([]);
@@ -76,6 +85,19 @@ createApp({
             {label:'近7天', value:'7'},
             {label:'全部', value:'all'},
         ];
+        const directionOptions = [
+            {label:'全部方向', value:'all'},
+            {label:'政治', value:'政治'},
+            {label:'经济', value:'经济'},
+            {label:'科技', value:'科技'},
+            {label:'军事', value:'军事'},
+            {label:'社会', value:'社会'},
+            {label:'文化', value:'文化'},
+            {label:'突发', value:'突发'},
+            {label:'财经', value:'财经'},
+        ];
+        const focusOptions = ['通用','经济','科技','政治','军事','社会','文化','突发','财经'];
+        const breakingTypeOptions = sourceOptions.filter(s => s.value !== 'all');
 
         const showToast = (msg, type='ok') => { toast.value={msg,type}; setTimeout(()=>toast.value=null,2500); };
         const getScoreLevel = (s) => {
@@ -167,6 +189,8 @@ createApp({
                 const p = new URLSearchParams({sort:sortType.value, source:filterSource.value, limit:'500'});
                 if(dateFilter.value !== 'all') p.set('days', dateFilter.value);
                 if(searchText.value) p.set('keyword', searchText.value);
+                if(filterDirection.value !== 'all') p.set('direction', filterDirection.value);
+                if(filterAuthor.value !== 'all') p.set('author', filterAuthor.value);
                 const data = await (await fetch(`${API}/api/news?${p}`)).json();
                 if(version !== _loadNewsVersion) return;  // 有更新的请求，丢弃旧数据
 
@@ -182,7 +206,9 @@ createApp({
                         }
 
                         if(showBreakingBanner.value) {
-                            const important = newItems.find(n => n.ai_score && n.ai_score >= breakingThreshold.value);
+                            const types = breakingTypes.value;
+                            const important = newItems.find(n => n.ai_score && n.ai_score >= breakingThreshold.value &&
+                                (types.includes('all') || types.includes(n.source_type)));
                             if(important) {
                                 breakingNews.value = important;
                                 _timeouts.push(setTimeout(() => { breakingNews.value = null; }, 15000));
@@ -215,12 +241,28 @@ createApp({
 
         const openSummary = async (news) => {
             summaryModal.value = {id:news.id, title:news.title, link:news.link, loading:true, text:null, error:null, cached:false};
-            chatMessages.value = []; chatInput.value = '';
+            chatMessages.value = []; chatInput.value = ''; summaryFocus.value = '';
             try {
                 const r = await fetch(`${API}/api/news/${news.id}/summary`);
                 const data = await r.json();
                 if(data.error) { summaryModal.value.error = data.error; }
                 else { summaryModal.value.text = data.summary; summaryModal.value.cached = data.cached; if(!data.cached) showToast('✅ '+truncate(news.title,20)+' 总结完成'); }
+            } catch(e) { summaryModal.value.error = '请求失败'; }
+            summaryModal.value.loading = false;
+        };
+
+        const regenerateSummary = async () => {
+            if(!summaryModal.value) return;
+            const id = summaryModal.value.id;
+            summaryModal.value.loading = true; summaryModal.value.text = null; summaryModal.value.error = null;
+            try {
+                const p = new URLSearchParams();
+                if(summaryFocus.value) p.set('focus', summaryFocus.value);
+                p.set('regenerate', '1');
+                const r = await fetch(`${API}/api/news/${id}/summary?${p}`);
+                const data = await r.json();
+                if(data.error) { summaryModal.value.error = data.error; }
+                else { summaryModal.value.text = data.summary; summaryModal.value.cached = false; showToast('✅ 重新生成完成'); }
             } catch(e) { summaryModal.value.error = '请求失败'; }
             summaryModal.value.loading = false;
         };
@@ -369,18 +411,54 @@ createApp({
         const addKeyword = () => { const kw=newKeyword.value.trim(); if(kw&&!blockedKeywords.value.includes(kw)){blockedKeywords.value.push(kw);newKeyword.value='';} };
         const loadConfig = async () => {
             try { const r=await(await fetch(`${API}/api/config/weights`)).json(); if(r&&Object.keys(r).length>0) weights.value=r; } catch(e) {}
-            try { const r=await(await fetch(`${API}/api/config`)).json(); if(r.blocked_keywords) blockedKeywords.value=JSON.parse(r.blocked_keywords); if(r.ai_model) aiModel.value=r.ai_model; if(r.refresh_interval) refreshInterval.value=parseInt(r.refresh_interval); if(r.collect_interval) collectInterval.value=parseInt(r.collect_interval); if(r.breaking_threshold) breakingThreshold.value=parseInt(r.breaking_threshold); } catch(e) {}
+            try {
+                const r=await(await fetch(`${API}/api/config`)).json();
+                if(r.blocked_keywords) blockedKeywords.value=JSON.parse(r.blocked_keywords);
+                if(r.ai_model) aiModel.value=r.ai_model;
+                if(r.refresh_interval) refreshInterval.value=parseInt(r.refresh_interval);
+                if(r.collect_interval) collectInterval.value=parseInt(r.collect_interval);
+                if(r.breaking_threshold) breakingThreshold.value=parseInt(r.breaking_threshold);
+                if(r.breaking_types) breakingTypes.value=JSON.parse(r.breaking_types);
+            } catch(e) {}
         };
         const saveSettings = async () => {
             try {
                 await fetch(`${API}/api/config/weights`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(weights.value)});
-                await fetch(`${API}/api/config`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({blocked_keywords:JSON.stringify(blockedKeywords.value),ai_model:aiModel.value,refresh_interval:String(refreshInterval.value),collect_interval:String(collectInterval.value),breaking_threshold:String(breakingThreshold.value)})});
+                await fetch(`${API}/api/config`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+                    blocked_keywords:JSON.stringify(blockedKeywords.value),
+                    ai_model:aiModel.value,
+                    refresh_interval:String(refreshInterval.value),
+                    collect_interval:String(collectInterval.value),
+                    breaking_threshold:String(breakingThreshold.value),
+                    breaking_types:JSON.stringify(breakingTypes.value)
+                })});
                 if(pollTimer) clearInterval(pollTimer);
                 pollTimer = setInterval(() => loadNews(true), refreshInterval.value * 1000);
                 if(collectTimer) clearInterval(collectTimer);
                 collectTimer = setInterval(() => fetch(`${API}/api/collect/trigger`,{method:'POST'}), collectInterval.value * 1000);
                 showSettings.value=false; showToast('已保存');
             } catch(e) { showToast('失败','err'); }
+        };
+
+        // 加载作者列表
+        const loadAuthors = async (sourceType) => {
+            try {
+                const r = await fetch(`${API}/api/authors?source=${sourceType || 'all'}`);
+                const data = await r.json();
+                if(Array.isArray(data)) {
+                    authorOptions.value = data;
+                } else {
+                    // 多source_type返回对象，展平
+                    authorOptions.value = Object.values(data).flat();
+                }
+            } catch(e) { authorOptions.value = []; }
+        };
+        // 切换来源时重新加载作者列表并重置作者筛选
+        const onSourceChange = (val) => {
+            filterSource.value = val;
+            filterAuthor.value = 'all';
+            loadAuthors(val);
+            loadNews();
         };
 
         // 弹窗打开时锁定页面滚动
@@ -416,7 +494,7 @@ createApp({
         };
 
         onMounted(() => {
-            loadTopNews(); loadNews(); loadStats(); loadConfig();
+            loadTopNews(); loadNews(); loadStats(); loadConfig(); loadAuthors('all');
             pollTimer = setInterval(() => { loadNews(true); loadTopNews(); }, refreshInterval.value * 1000);
             collectTimer = setInterval(() => fetch(`${API}/api/collect/trigger`,{method:'POST'}), collectInterval.value * 1000);
             // 初始化卡片光晕 + 每次加载后重新绑定
@@ -427,18 +505,19 @@ createApp({
         onUnmounted(() => { if(pollTimer) clearInterval(pollTimer); if(collectTimer) clearInterval(collectTimer); _timeouts.forEach(t => clearTimeout(t)); });
 
         return {
-            newsList,topNews,topNewsIds,stats,sortType,filterSource,dateFilter,searchText,loading,
+            newsList,topNews,topNewsIds,stats,sortType,filterSource,filterDirection,filterAuthor,dateFilter,searchText,loading,
             showSettings,settingsTab,weights,blockedKeywords,newKeyword,aiModel,toast,
-            refreshInterval,collectInterval,showBreakingBanner,breakingThreshold,showNewNotif,
+            refreshInterval,collectInterval,showBreakingBanner,breakingThreshold,breakingTypes,showNewNotif,
             breakingNews,updateToast,showUpdatePanel,updateList,
-            summaryModal,chatMessages,chatInput,chatLoading,chatBox,
+            summaryModal,summaryFocus,chatMessages,chatInput,chatLoading,chatBox,
             showRAGChat,ragMessages,ragInput,ragLoading,ragChatBox,
             batchLoading,batchProgress,
             analysisTab,analysisData,analysisLoading,showMarketBrief,marketBriefText,marketBriefLoading,
-            sourceOptions,dateOptions,filteredNews,getScoreLevel,getScoreColor,getScoreRing,truncate,
+            sourceOptions,dateOptions,directionOptions,focusOptions,breakingTypeOptions,authorOptions,
+            filteredNews,getScoreLevel,getScoreColor,getScoreRing,truncate,
             getSourceTagClass,timeAgo,formatPubTime,formatLocalTime,formatSummary,
-            openSummary,loadAnalysis,openMarketBrief,toggleBookmark,sendChat,sendRAGChat,batchSummary,markRead,openNews,scrollToNews,
-            loadNews,doSearch,manualRefresh,triggerCollect,triggerScore,
+            openSummary,regenerateSummary,loadAnalysis,openMarketBrief,toggleBookmark,sendChat,sendRAGChat,batchSummary,markRead,openNews,scrollToNews,
+            loadNews,doSearch,manualRefresh,triggerCollect,triggerScore,onSourceChange,
             addKeyword,saveSettings,showToast
         };
     }

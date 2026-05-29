@@ -87,7 +87,7 @@ def update_score(news_id, scores):
         ))
         conn.commit()
 
-def get_news_list(sort='score', source_type=None, keyword=None, days=None, limit=200, offset=0):
+def get_news_list(sort='score', source_type=None, keyword=None, days=None, limit=200, offset=0, direction=None, author=None):
     with get_conn() as conn:
         query = "SELECT * FROM news WHERE is_blocked = 0"
         params = []
@@ -109,6 +109,14 @@ def get_news_list(sort='score', source_type=None, keyword=None, days=None, limit
         if source_type and source_type != 'all':
             query += " AND source_type = ?"
             params.append(source_type)
+
+        if direction and direction != 'all':
+            query += " AND direction = ?"
+            params.append(direction)
+
+        if author and author != 'all':
+            query += " AND author = ?"
+            params.append(author)
 
         if keyword:
             query += " AND (title LIKE ? OR content LIKE ?)"

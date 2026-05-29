@@ -111,9 +111,9 @@
 
     <!-- 筛选栏 -->
     <div class="max-w-7xl mx-auto px-3 pt-3">
-        <div class="flex flex-wrap items-center gap-2 mb-3">
+        <div class="flex flex-wrap items-center gap-2 mb-2">
             <div class="flex bg-dark-3 rounded-lg p-0.5">
-                <button v-for="s in sourceOptions" :key="s.value" @click="filterSource=s.value;loadNews()"
+                <button v-for="s in sourceOptions" :key="s.value" @click="onSourceChange(s.value)"
                         :class="filterSource===s.value?'bg-dark-1 text-white':'text-gray-500'"
                         class="px-2 py-1 rounded-md text-xs transition flex items-center gap-1">
                     <span v-if="s.color" class="w-1.5 h-1.5 rounded-full" :style="{background:s.color}"></span>
@@ -134,6 +134,19 @@
                     {{ batchLoading ? `生成中 ${batchProgress}...` : '一键总结' }}
                 </button>
             </div>
+        </div>
+        <!-- 二级筛选：方向 + 人物 -->
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+            <div class="flex bg-dark-3 rounded-lg p-0.5">
+                <button v-for="d in directionOptions" :key="d.value" @click="filterDirection=d.value;loadNews()"
+                        :class="filterDirection===d.value?'bg-dark-1 text-white':'text-gray-500'"
+                        class="px-2 py-1 rounded-md text-xs transition">{{ d.label }}</button>
+            </div>
+            <select v-if="authorOptions.length > 0" v-model="filterAuthor" @change="loadNews()"
+                    class="bg-dark-3 border border-white/5 rounded-lg px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-blue-500/50">
+                <option value="all">全部人物</option>
+                <option v-for="a in authorOptions" :key="a" :value="a">{{ a }}</option>
+            </select>
         </div>
     </div>
 
@@ -263,7 +276,18 @@
                 <button @click="summaryModal=null" class="w-6 h-6 rounded-lg bg-dark-3 flex items-center justify-center hover:bg-dark-4 text-gray-400 text-xs">✕</button>
             </div>
             <div class="p-4">
-                <h3 class="text-sm font-medium text-white mb-3 leading-snug">{{ summaryModal.title }}</h3>
+                <h3 class="text-sm font-medium text-white mb-2 leading-snug">{{ summaryModal.title }}</h3>
+                <!-- 总结方向选择 + 重新生成 -->
+                <div class="flex items-center gap-1.5 mb-3 flex-wrap">
+                    <span class="text-xs text-gray-500">分析方向:</span>
+                    <button v-for="f in focusOptions" :key="f"
+                            @click="summaryFocus=summaryFocus===f?'':f"
+                            :class="summaryFocus===f?'bg-purple-600 text-white':'bg-dark-3 text-gray-400'"
+                            class="px-2 py-0.5 rounded-md text-xs transition">{{ f }}</button>
+                    <button @click="regenerateSummary()" class="ml-1 px-2 py-0.5 bg-blue-600/20 text-blue-400 border border-blue-500/20 rounded-md text-xs hover:bg-blue-600/30 transition">
+                        重新生成
+                    </button>
+                </div>
                 <div v-if="summaryModal.loading" class="flex items-center justify-center gap-2 py-8 text-gray-500 text-xs">
                     <div class="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                     AI正在分析...
@@ -421,10 +445,27 @@
                                 <span :class="showBreakingBanner?'translate-x-5':'translate-x-0.5'" class="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform"></span>
                             </button>
                         </div>
-                        <div v-if="showBreakingBanner" class="flex items-center gap-2 ml-1">
-                            <span class="text-xs text-gray-500">触发分数≥</span>
-                            <input type="range" min="70" max="95" :value="breakingThreshold" @input="breakingThreshold=parseInt($event.target.value)" class="slider-track flex-1">
-                            <span class="text-xs text-blue-400 w-8 text-right font-mono">{{ breakingThreshold }}</span>
+                        <div v-if="showBreakingBanner" class="ml-1 space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-gray-500">触发分数≥</span>
+                                <input type="range" min="70" max="95" :value="breakingThreshold" @input="breakingThreshold=parseInt($event.target.value)" class="slider-track flex-1">
+                                <span class="text-xs text-blue-400 w-8 text-right font-mono">{{ breakingThreshold }}</span>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-500 block mb-1">触发类型</span>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <button @click="breakingTypes=['all']"
+                                            :class="breakingTypes.includes('all')?'bg-blue-600 text-white':'bg-dark-4 text-gray-500'"
+                                            class="px-2 py-0.5 rounded text-xs transition">全部</button>
+                                    <button v-for="t in breakingTypeOptions" :key="t.value"
+                                            @click="breakingTypes=breakingTypes.includes('all')?[t.value]:breakingTypes.includes(t.value)?breakingTypes.filter(v=>v!==t.value):[...breakingTypes,t.value]"
+                                            :class="breakingTypes.includes(t.value)||breakingTypes.includes('all')?'bg-blue-600 text-white':'bg-dark-4 text-gray-500'"
+                                            class="px-2 py-0.5 rounded text-xs transition flex items-center gap-1">
+                                        <span v-if="t.color" class="w-1.5 h-1.5 rounded-full" :style="{background:t.color}"></span>
+                                        {{ t.label }}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="flex items-center justify-between">
