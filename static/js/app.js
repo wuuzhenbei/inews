@@ -5,9 +5,9 @@ createApp({
         const newsList = ref([]);
         const topNews = ref([]);
         const stats = ref({total:0,scored:0,today:0,last_update:null});
-        const sortType = ref('latest');
+        const sortType = ref('score');
         const filterSource = ref('all');
-        const dateFilter = ref('all');
+        const dateFilter = ref('0');
         const searchText = ref('');
         const loading = ref(true);
         const showSettings = ref(false);
