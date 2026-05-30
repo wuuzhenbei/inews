@@ -17,7 +17,7 @@ from database.db import (
 )
 from collectors.scheduler import start_scheduler
 from processors.scorer import batch_score
-from config import WEB_HOST, WEB_PORT, DEFAULT_INTEREST_WEIGHTS, AI_API_KEY, AI_BASE_URL, AI_MODEL, AI_CHAT_MODEL, API_ACCESS_KEY
+from config import WEB_HOST, WEB_PORT, DEFAULT_INTEREST_WEIGHTS, AI_API_KEY, AI_BASE_URL, AI_MODEL, AI_CHAT_MODEL, API_ACCESS_KEY, MODEL_PRESETS
 from utils.ai_client import get_ai_client
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
@@ -366,6 +366,19 @@ def api_rag_chat():
             yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
 
     return Response(stream_with_context(generate()), content_type='text/event-stream')
+
+# ── AI模型配置API ──
+@app.route('/api/ai/models')
+def api_ai_models():
+    """获取当前 AI 模型配置和预设列表"""
+    return jsonify({
+        'current': {
+            'model': AI_MODEL,
+            'base_url': AI_BASE_URL,
+            'chat_model': AI_CHAT_MODEL,
+        },
+        'presets': MODEL_PRESETS,
+    })
 
 # ── 配置API ──
 @app.route('/api/config', methods=['GET'])

@@ -16,6 +16,9 @@ createApp({
         const blockedKeywords = ref([]);
         const newKeyword = ref('');
         const aiModel = ref('mimo-v2.5');
+        const modelPresets = ref({});
+        const currentModelName = ref('');
+        const currentBaseUrl = ref('');
         const toast = ref(null);
 
         // 实时更新
@@ -445,6 +448,18 @@ createApp({
                 if(r.breaking_types) breakingTypes.value=JSON.parse(r.breaking_types);
             } catch(e) {}
         };
+        const loadModelConfig = async () => {
+            try {
+                const r = await (await fetch(`${API}/api/ai/models`)).json();
+                modelPresets.value = r.presets;
+                currentModelName.value = r.presets[r.current.model]?.name || r.current.model;
+                currentBaseUrl.value = r.current.base_url;
+            } catch(e) {}
+        };
+        const applyModelPreset = (key) => {
+            aiModel.value = key;
+            showToast('已选择预设，保存后生效');
+        };
         const saveSettings = async () => {
             try {
                 await fetch(`${API}/api/config/weights`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(weights.value)});
@@ -528,7 +543,7 @@ createApp({
         };
 
         onMounted(() => {
-            loadTopNews(); loadNews(); loadStats(); loadConfig(); loadAuthors('all');
+            loadTopNews(); loadNews(); loadStats(); loadConfig(); loadModelConfig(); loadAuthors('all');
             pollTimer = setInterval(() => { loadNews(true); loadTopNews(); }, refreshInterval.value * 1000);
             // 点击外部关闭作者选择面板
             document.addEventListener('click', (e) => {
@@ -546,7 +561,7 @@ createApp({
 
         return {
             newsList,topNews,topNewsIds,stats,sortType,filterSource,filterDirection,filterAuthor,dateFilter,searchText,loading,
-            showSettings,settingsTab,weights,blockedKeywords,newKeyword,aiModel,toast,
+            showSettings,settingsTab,weights,blockedKeywords,newKeyword,aiModel,modelPresets,currentModelName,currentBaseUrl,applyModelPreset,toast,
             refreshInterval,collectInterval,showBreakingBanner,breakingThreshold,breakingTypes,showNewNotif,
             breakingNews,updateToast,showUpdatePanel,updateList,
             summaryModal,summaryFocus,chatMessages,chatInput,chatLoading,chatBox,

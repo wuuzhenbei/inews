@@ -12,6 +12,40 @@ AI_BASE_URL = os.getenv('AI_BASE_URL', 'https://api.siliconflow.cn/v1')
 AI_MODEL = os.getenv('AI_MODEL', 'Qwen/Qwen2.5-7B-Instruct')
 AI_CHAT_MODEL = os.getenv('AI_CHAT_MODEL', '')  # 聊天专用模型，留空则用AI_MODEL
 
+# 模型预设配置（仅用于前端展示，实际配置仍从环境变量读取）
+MODEL_PRESETS = {
+    'deepseek-chat': {
+        'name': 'DeepSeek V3',
+        'provider': 'DeepSeek',
+        'base_url': 'https://api.deepseek.com/v1',
+    },
+    'deepseek-reasoner': {
+        'name': 'DeepSeek R1',
+        'provider': 'DeepSeek',
+        'base_url': 'https://api.deepseek.com/v1',
+    },
+    'Qwen/Qwen2.5-72B-Instruct': {
+        'name': 'Qwen2.5 72B',
+        'provider': '通义千问',
+        'base_url': 'https://api.siliconflow.cn/v1',
+    },
+    'mimo-v2.5': {
+        'name': 'MiMo V2.5',
+        'provider': '小米',
+        'base_url': 'https://token-plan-cn.xiaomimimo.com/v1',
+    },
+    'moonshot-v1-8k': {
+        'name': 'Moonshot V1',
+        'provider': '月之暗面',
+        'base_url': 'https://api.moonshot.cn/v1',
+    },
+    'glm-4-flash': {
+        'name': 'GLM-4 Flash',
+        'provider': '智谱',
+        'base_url': 'https://open.bigmodel.cn/api/paas/v4',
+    },
+}
+
 # X/Twitter
 X_BEARER_TOKEN = os.getenv('X_BEARER_TOKEN', '')
 

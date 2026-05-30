@@ -551,14 +551,26 @@
                 </div>
                 <div v-if="settingsTab==='AI配置'" class="space-y-3">
                     <div>
-                        <label class="text-xs text-gray-500 block mb-1">模型</label>
-                        <select v-model="aiModel" class="w-full bg-dark-3 border border-white/5 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
-                            <option value="mimo-v2.5">MiMo-V2.5 (推荐)</option>
-                            <option value="mimo-v2.5-pro">MiMo-V2.5-Pro</option>
-                        </select>
+                        <label class="text-xs text-gray-500 block mb-1">当前模型</label>
+                        <div class="bg-dark-3 rounded-lg p-2.5 text-xs">
+                            <div class="text-white font-medium">{{ currentModelName }}</div>
+                            <div class="text-gray-500 mt-1">{{ currentBaseUrl }}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 block mb-1">预设模型</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button v-for="(preset, key) in modelPresets" :key="key"
+                                    @click="applyModelPreset(key)"
+                                    :class="['p-2 rounded-lg text-xs text-left border',
+                                             aiModel === key ? 'border-blue-500 bg-blue-500/10' : 'border-white/5 bg-dark-3 hover:border-white/10']">
+                                <div class="text-white">{{ preset.name }}</div>
+                                <div class="text-gray-500">{{ preset.provider }}</div>
+                            </button>
+                        </div>
                     </div>
                     <div class="bg-dark-3 rounded-lg p-2.5 text-xs text-gray-500">
-                        <div>API: https://token-plan-cn.xiaomimimo.com/v1</div>
+                        要切换模型，请修改 .env 文件中的 AI_BASE_URL 和 AI_MODEL
                     </div>
                 </div>
                 <div class="mt-4 flex justify-end gap-2">
