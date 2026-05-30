@@ -1,5 +1,5 @@
 app = 'inews'
-primary_region = 'hkg'
+primary_region = 'nrt'
 
 [build]
 
@@ -16,7 +16,7 @@ primary_region = 'hkg'
 
 [[vm]]
   size = 'shared-cpu-1x'
-  memory = '512mb'
+  memory = '256mb'
 
 [mounts]
   source = 'inews_data'
